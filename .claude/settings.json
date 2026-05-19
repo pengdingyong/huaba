@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[Auto Check] Code modified - checking for common issues: null safety, resource leaks, SQL injection, exception handling'"
+          }
+        ]
+      }
+    ]
+  }
+}
