@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2013-Now https://jeesite.com All rights reserved.
+     No deletion without permission, or be held responsible to law. -->
+<template>
+	<name>start-class</name>
+	<filePath>${baseDir}/${modulePath}/${moduleCode}/src/main/java/com/jeesite/modules</filePath>
+	<fileName>${@StringUtils.capCamelCase(moduleCode)}Application.java</fileName>
+	<content><![CDATA[
+/**
+ * Copyright (c) 2013-Now https://jeesite.com All rights reserved.
+ * No deletion without permission, or be held responsible to law.
+ */
+package com.jeesite.modules;
+
+import com.jeesite.modules.cloud.feign.EnableFeignClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.Environment;
+
+/**
+ * Application
+ * @author ThinkGem
+ * @version ${@DateUtils.getDate()}
+ */
+@SpringBootApplication
+@EnableDiscoveryClient
+@EnableFeignClients(basePackages={"com.jeesite.modules"})
+public class ${@StringUtils.capCamelCase(moduleCode)}Application extends SpringBootServletInitializer {
+
+	private static final Logger logger = LoggerFactory.getLogger(${@StringUtils.capCamelCase(moduleCode)}Application.class);
+
+	public static void main(String[] args) {
+		ConfigurableApplicationContext context = SpringApplication.run(${@StringUtils.capCamelCase(moduleCode)}Application.class, args);
+		Environment env = context.getEnvironment();
+		logger.info(
+				"\n\n==============================================================\n"
+				+ "\n   启动完成，访问地址：http://127.0.0.1:{}{}\n"
+				+ "\n==============================================================\n",
+				env.getProperty("local.server.port"), env.getProperty("server.servlet.context-path"));
+	}
+	
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+		this.setRegisterErrorPageFilter(false); // 错误页面有容器来处理，而不是SpringBoot
+		return builder.sources(${@StringUtils.capCamelCase(moduleCode)}Application.class);
+	}
+	
+}]]>
+	</content>
+</template>

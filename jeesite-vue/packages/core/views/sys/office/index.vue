@@ -1,0 +1,32 @@
+<!--
+ * Copyright (c) 2013-Now https://jeesite.com All rights reserved.
+ * No deletion without permission, or be held responsible to law.
+ * @author ThinkGem
+-->
+<template>
+  <PageWrapper :sidebarWidth="200">
+    <template #sidebar>
+      <BasicTree
+        :title="t('机构')"
+        :search="true"
+        :toolbar="true"
+        :showIcon="true"
+        :api="officeTreeData"
+        :defaultExpandLevel="2"
+        v-model:selectedKeys="treeCodes"
+      />
+    </template>
+    <ListView v-model:treeCodes="treeCodes" />
+  </PageWrapper>
+</template>
+<script lang="ts" setup name="ViewsSysOfficeIndex">
+  import { ref } from 'vue';
+  import { useI18n } from '@jeesite/core/hooks/web/useI18n';
+  import { PageWrapper } from '@jeesite/core/components/Page';
+  import { BasicTree } from '@jeesite/core/components/Tree';
+  import { officeTreeData } from '@jeesite/core/api/sys/office';
+  import ListView from './list.vue';
+
+  const { t } = useI18n('sys.office');
+  const treeCodes = ref<string[]>([]);
+</script>

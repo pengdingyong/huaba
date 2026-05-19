@@ -1,0 +1,302 @@
+/**
+ * Copyright (c) 2013-Now https://jeesite.com All rights reserved.
+ * No deletion without permission, or be held responsible to law.
+ */
+package com.jeesite.modules.cms.service;
+
+import com.jeesite.common.collect.ListUtils;
+import com.jeesite.common.config.Global;
+import com.jeesite.common.entity.Page;
+import com.jeesite.common.lang.DateUtils;
+import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.service.CrudService;
+import com.jeesite.common.service.ServiceException;
+import com.jeesite.modules.cms.dao.ArticleDao;
+import com.jeesite.modules.cms.dao.ArticleDataDao;
+import com.jeesite.modules.cms.entity.Article;
+import com.jeesite.modules.cms.entity.ArticleData;
+import com.jeesite.modules.cms.service.extend.ArticleAuthService;
+import com.jeesite.modules.cms.service.extend.ArticleIndexService;
+import com.jeesite.modules.cms.service.extend.ArticleVectorStore;
+import com.jeesite.modules.cms.service.extend.PageCacheService;
+import com.jeesite.modules.cms.utils.CmsUtils;
+import com.jeesite.modules.file.utils.FileUploadUtils;
+import io.netty.util.concurrent.DefaultThreadFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 文章 Service
+ * @author ThinkGem
+ * @version 2025-10-12
+ */
+@Service
+public class ArticleService extends CrudService<ArticleDao, Article> {
+
+	protected static final ExecutorService updateExpiredWeightThreadPool = new ThreadPoolExecutor(5, 20,
+			60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(),
+			new DefaultThreadFactory("cms-update-expired-weight"));
+
+	protected final ArticleDataDao articleDataDao;
+	protected final ArticleIndexService articleIndexService;
+	protected final ArticleVectorStore articleVectorStore;
+	protected final ArticleAuthService articleAuthService;
+	protected final PageCacheService pageCacheService;
+
+	// 是否能使用审核功能
+	public static boolean isCanUseAuth;
+
+	public ArticleService(ArticleDataDao articleDataDao,
+						  ObjectProvider<ArticleIndexService> articleIndexService,
+						  ObjectProvider<ArticleVectorStore> articleVectorStore,
+						  ObjectProvider<ArticleAuthService> bpmArticleService,
+						  ObjectProvider<PageCacheService> pageCacheService) {
+		this.articleDataDao = articleDataDao;
+		this.articleIndexService = articleIndexService.getIfAvailable();
+		this.articleVectorStore = articleVectorStore.getIfAvailable();
+		this.articleAuthService = bpmArticleService.getIfAvailable();
+		this.pageCacheService = pageCacheService.getIfAvailable();
+		ArticleService.isCanUseAuth = articleAuthService != null;
+	}
+	
+	/**
+	 * 获取单条数据
+	 * @param article 主键
+	 */
+	@Override
+	public Article get(Article article) {
+		Article entity = super.get(article);
+		if (entity != null && StringUtils.isNotBlank(article.getId())) {
+			entity.setArticleData(get(new ArticleData(article.getId())));
+		}
+		return entity;
+	}
+
+	/**
+	 * 获取文章详情内容
+	 */
+	public ArticleData get(ArticleData articleData) {
+		return articleDataDao.get(articleData);
+	}
+
+	/**
+	 * 添加数据权限
+	 */
+	@Override
+	public void addDataScopeFilter(Article entity, String ctrlPermi) {
+		entity.sqlMap().getDataScope().addFilter("dsfCategory",
+				"Category", "a.category_code", "a.create_by", ctrlPermi);
+	}
+
+	/**
+	 * 查询文章数据
+	 * @param article 查询条件
+	 */
+	@Override
+	public List<Article> findList(Article entity) {
+		return super.findList(entity);
+	}
+	
+	/**
+	 * 查询分页数据
+	 * @param article 查询条件
+	 * @param article page 分页对象
+	 */
+	@Override
+	public Page<Article> findPage(Article article) {
+		updateExpiredWeightThreadPool.submit(() -> updateExpiredWeight(article));
+		return super.findPage(article);
+	}
+
+	/**
+	 * 通过编号获取内容标题
+	 * @param ids 主键，使用逗号分隔
+	 * @return new Object[]{栏目Id,内容Id,内容标题}
+	 */
+	public List<Object[]> findByIds(String ids) {
+		List<Object[]> list = ListUtils.newArrayList();
+		if (ids == null) {
+			return list;
+		}
+		Article where = new Article();
+		where.setId_in(StringUtils.splitComma(ids));
+		dao.findList(where).forEach((e) -> {
+			list.add(new Object[] { e.getCategory().getId(), e.getId(), StringUtils.abbr(e.getTitle(), 50) });
+		});
+		return list;
+	}
+	
+	/**
+	 * 权重更新
+	 * @param article 数据对象
+	 * @author ThinkGem
+	 */
+	@Transactional
+	public void updateExpiredWeight(Article article) {
+		// 更新过期的权重，间隔为“6”个小时
+		Date updateExpiredWeightDate = CmsUtils.getCache("updateExpiredWeightDateByArticle");
+		if (updateExpiredWeightDate == null || updateExpiredWeightDate.getTime() < System.currentTimeMillis()) {
+			article.setWeightDate(new Date());
+			dao.updateExpiredWeight(article);
+			CmsUtils.putCache("updateExpiredWeightDateByArticle", DateUtils.addHours(new Date(), 6));
+		}
+	}
+
+	/**
+	 * 保存数据（插入或更新）
+	 * @param article 数据对象
+	 */
+	@Override
+	@Transactional
+	public void save(Article article) {
+		Global.assertDemoMode();
+		// 补充栏目信息（全文检索和流程审核需要）
+		if (StringUtils.isNotBlank(article.getCategory().getId())) {
+			article.setCategory(CmsUtils.getCategory(article.getCategory().getId()));
+		}
+		if (StringUtils.isBlank(article.getCategory().getId())) {
+			throw new ServiceException(text("归属栏目不正确或为空。"));
+		}
+		// 如果需要文章审核流程，则进行下一步流程操作
+		if (isCanUseAuth && Global.YES.equals(article.getCategory().getIsNeedAudit())) {
+			articleAuthService.submit(article, this::saveArticle);
+		} else {
+			// 保存文章
+			saveArticle(article);
+			// 发布文章
+			if (Article.STATUS_NORMAL.equals(article.getStatus())) {
+				updateStatus(article);
+			}
+		}
+	}
+
+	private void saveArticle(Article article) {
+		// 计算内容字数
+		ArticleData articleData = article.getArticleData();
+		article.setWordCount(StringUtils.stripHtml(articleData.getContent()).length());
+		// 保存详细内容
+		if (article.getIsNewRecord()) {
+			dao.insert(article);
+			articleData.setId(article.getId());
+			articleDataDao.insert(articleData);
+		} else {
+			dao.update(article);
+			articleData.setId(article.getId());
+			articleDataDao.update(articleData);
+		}
+		// 保存上传图片
+		FileUploadUtils.saveFileUpload(article, article.getId(), "article_image");
+		// 文章发布后的一些处理
+		if (Article.STATUS_NORMAL.equals(article.getStatus())) {
+			// 保存文章全文检索索引
+			if (articleIndexService != null) {
+				articleIndexService.save(article);
+			}
+			// 保存文章到向量数据库
+			if (articleVectorStore != null) {
+				articleVectorStore.save(article);
+			}
+			// 清理首页、栏目和文章页面缓存
+			if (pageCacheService != null) {
+				pageCacheService.clearCache(article);
+			}
+		}
+	}
+
+	/**
+	 * 更新状态
+	 * @param article 数据对象
+	 */
+	@Override
+	@Transactional
+	public void updateStatus(Article article) {
+		super.updateStatus(article);
+		// 保存文章全文检索索引
+		if (articleIndexService != null) {
+			if (Article.STATUS_NORMAL.equals(article.getStatus())) {
+				articleIndexService.save(article);
+			} else {
+				articleIndexService.delete(article);
+			}
+		}
+		// 保存文章到向量数据库
+		if (articleVectorStore != null) {
+			if (Article.STATUS_NORMAL.equals(article.getStatus())) {
+				articleVectorStore.save(article);
+			} else {
+				articleVectorStore.delete(article);
+			}
+		}
+		// 清理首页、栏目和文章页面缓存
+		if (pageCacheService != null) {
+			pageCacheService.clearCache(article);
+		}
+	}
+
+	/**
+	 * 文章点击次数数加一
+	 */
+	@Transactional
+	public void updateHitsAddOne(String id) {
+		dao.updateHitsAddOne(id);
+	}
+
+	/**
+	 * 获取文章点击次数
+	 */
+	public long getHits(String id) {
+		return dao.getHits(id);
+	}
+
+	/**
+	 * 删除数据
+	 * @param article 文章
+	 */
+	@Override
+	@Transactional
+	public void delete(Article article) {
+		super.delete(article);
+		// 保存文章全文检索索引
+		if (articleIndexService != null) {
+			articleIndexService.delete(article);
+		}
+		// 保存文章到向量数据库
+		if (articleVectorStore != null) {
+			articleVectorStore.delete(article);
+		}
+		// 清理首页、栏目和文章页面缓存
+		if (pageCacheService != null) {
+			pageCacheService.clearCache(article);
+		}
+	}
+
+	/**
+	 * 文章高级搜索
+	 * @param page 分页对象
+	 * @param qStr 搜索字符串
+	 * @param qand 包含的字符串
+	 * @param qnot 不包含的字符串
+	 * @param bd 开始日期
+	 * @param ed 结束日期
+	 * @author ThinkGem
+	 */
+	public Page<Map<String, Object>> searchPage(Page<Map<String, Object>> page, String qStr,
+			String qand, String qnot, String bd, String ed, Map<String, String> params) {
+		if (articleIndexService == null) {
+			page.addOtherData("message", text("您好，请安装全文检索模块后再试。" +
+					"<a href=\"https://jeesite.com/docs/cms/\" target=\"_blank\">安装文档</a>"));
+			return page;
+		}
+		return articleIndexService.searchPage(page, qStr, qand, qnot, bd, ed, params);
+	}
+
+}

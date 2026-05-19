@@ -1,0 +1,76 @@
+<% layout('/layouts/default.html', {title: '商品表管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('商品表管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('core:spb:edit')){ %>
+					<a href="${ctx}/core/spb/form" class="btn btn-default btnTool" title="${text('新增商品表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn-setting" id="btnSetting" title="${text('设置')}"><i class="fa icon-settings"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${coreSpb}" action="${ctx}/core/spb/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('商品编号')}：</label>
+					<div class="control-inline">
+						<#form:input path="spbSpbh" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('商品名称')}：</label>
+					<div class="control-inline">
+						<#form:input path="spbSpmc" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('商品价格')}：</label>
+					<div class="control-inline">
+						<#form:input path="spbJg" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm"><i class="glyphicon glyphicon-search"></i> ${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick"><i class="glyphicon glyphicon-repeat"></i> ${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+//# // 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $('#searchForm'),
+	columnModel: [
+		{header:'${text("商品编号")}', name:'spbSpbh', index:'a.spb_spbh', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/core/spb/form?id='+row.id+'" class="btnList" data-title="${text("编辑商品表")}">'+$.jgrid.htmlEncode(val||row.id)+'</a>';
+		}},
+		{header:'${text("商品名称")}', name:'spbSpmc', index:'a.spb_spmc', width:150, align:"left"},
+		{header:'${text("商品价格")}', name:'spbJg', index:'a.spb_spjg', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//# if(hasPermi('core:spb:edit')){
+				actions.push('<a href="${ctx}/core/spb/form?id='+row.id+'" class="btnList" title="${text("编辑商品表")}"><i class="fa icon-note"></i></a>&nbsp;');
+				if (row.status == Global.STATUS_NORMAL){
+					actions.push('<a href="${ctx}/core/spb/disable?id='+row.id+'" class="btnList" title="${text("停用商品表")}" data-confirm="${text("确认要停用该商品表吗？")}"><i class="fa icon-ban"></i></a>&nbsp;');
+				} else if (row.status == Global.STATUS_DISABLE){
+					actions.push('<a href="${ctx}/core/spb/enable?id='+row.id+'" class="btnList" title="${text("启用商品表")}" data-confirm="${text("确认要启用该商品表吗？")}"><i class="fa icon-check"></i></a>&nbsp;');
+				}
+				actions.push('<a href="${ctx}/core/spb/delete?id='+row.id+'" class="btnList" title="${text("删除商品表")}" data-confirm="${text("确认要删除该商品表吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//# }
+			return actions.join('');
+		}}
+	],
+	//# // 加载成功后执行事件
+	ajaxSuccess: function(data){
+	}
+});
+</script>

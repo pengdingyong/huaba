@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.core.dao.CoreSpbDao">
+	
+	<!-- 开启二级缓存 -->
+	<cache
+		type="org.apache.ibatis.cache.impl.PerpetualCache"
+		size="1024"
+		readOnly="false"
+		blocking="false"
+	/>
+	
+	<!-- 查询商品销售额前5 -->
+	<select id="findTop5Sales" resultType="java.util.Map">
+		SELECT
+			s.id AS spbId,
+			s.spb_spmc AS spbName,
+			SUM(d.ddb_ddje) AS salesAmount
+		FROM
+			core_spb s
+		JOIN
+			core_ddb d ON s.id = d.spb_id
+		WHERE
+			d.spb_id IS NOT NULL
+			AND d.ddb_ddje IS NOT NULL
+		GROUP BY
+			s.id, s.spb_spmc
+		ORDER BY
+			salesAmount DESC
+		LIMIT 5
+	</select>
+	
+	<!-- 订单表的懒加载查询 -->
+	<resultMap id="CoreSpbResultMap" type="com.jeesite.modules.core.entity.CoreSpb">
+		<id property="id" column="id" />
+		<result property="spbSpmc" column="spb_spmc" />
+		<result property="spbSpfl" column="spb_spfl" />
+		<result property="spbJg" column="spb_jg" />
+		<result property="remarks" column="remarks" />
+		<result property="delFlag" column="del_flag" />
+		<!-- 懒加载订单列表 -->
+		<collection property="orderList" ofType="com.jeesite.modules.core.entity.CoreDdb" select="findOrdersBySpbId" column="id" fetchType="lazy" />
+	</resultMap>
+	
+	<!-- 根据商品ID查询订单列表 -->
+	<select id="findOrdersBySpbId" parameterType="String" resultType="com.jeesite.modules.core.entity.CoreDdb">
+		SELECT
+			id,
+			order_num AS orderNum,
+			spb_id AS spbId,
+			ddb_xdsj AS ddbXdsj,
+			ddb_ddje AS ddbDdje,
+			ddb_ddlx AS ddbDdlx
+		FROM
+			core_ddb
+		WHERE
+			spb_id = #{id}
+		ORDER BY
+			ddb_xdsj DESC
+	</select>
+	
+	<!-- 重写 findList 方法，使用懒加载 -->
+	<select id="findList" parameterType="com.jeesite.modules.core.entity.CoreSpb" resultMap="CoreSpbResultMap">
+		SELECT
+			s.id,
+			s.spb_spmc,
+			s.spb_spfl,
+			s.spb_jg,
+			s.remarks,
+			s.del_flag
+		FROM
+			core_spb s
+		<where>
+			<if test="spbSpmc != null and spbSpmc != ''">
+				AND s.spb_spmc LIKE CONCAT('%', #{spbSpmc}, '%')
+			</if>
+			<if test="spbSpfl != null and spbSpfl != ''">
+				AND s.spb_spfl = #{spbSpfl}
+			</if>
+			<if test="delFlag != null">
+				AND s.del_flag = #{delFlag}
+			</if>
+		</where>
+		<if test="sqlMap.orderBy != null and sqlMap.orderBy != ''">
+			ORDER BY ${sqlMap.orderBy}
+		</if>
+	</select>
+	
+	<!-- 重写 findById 方法，使用懒加载 -->
+	<select id="findById" parameterType="String" resultMap="CoreSpbResultMap">
+		SELECT
+			s.id,
+			s.spb_spmc,
+			s.spb_spfl,
+			s.spb_jg,
+			s.remarks,
+			s.del_flag
+		FROM
+			core_spb s
+		WHERE
+			s.id = #{id}
+	</select>
+	
+</mapper>

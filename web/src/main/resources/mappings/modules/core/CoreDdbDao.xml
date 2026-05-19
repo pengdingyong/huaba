@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.core.dao.CoreDdbDao">
+	
+	<!-- 开启二级缓存 -->
+	<!--
+		flushInterval: 缓存刷新毫秒，300000 300秒刷新一次
+		size: 缓存大小，缓存对象数量上限
+	-->
+	<cache
+		type="org.apache.ibatis.cache.impl.PerpetualCache"
+		size="1024" eviction="LRU" flushInterval="300000"
+		readOnly="false"
+		blocking="false"
+	/>
+	
+	<!-- 按日期分组查询订单金额 -->
+	<select id="findChartData" resultType="java.util.Map" useCache="true">
+		SELECT
+			DATE_FORMAT(ddb_xdsj, '%Y-%m-%d') AS date,
+			SUM(ddb_ddje) AS amount
+		FROM
+			core_ddb
+		WHERE
+			ddb_xdsj IS NOT NULL
+			AND ddb_ddje IS NOT NULL
+		GROUP BY
+			DATE_FORMAT(ddb_xdsj, '%Y-%m-%d')
+		ORDER BY
+			date ASC
+	</select>
+	
+</mapper>

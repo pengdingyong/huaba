@@ -1,0 +1,206 @@
+<% layout('/layouts/default.html', {title: '租户管理员', libs: ['validate','dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header with-border">
+			<div class="box-title">
+				<i class="fa icon-badge"></i> ${text(user.isNewRecord ? '新增管理员' : '编辑管理员')}
+			</div>
+			<div class="box-tools pull-right hide">
+				<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+			</div>
+		</div>
+		<#form:form id="inputForm" model="${user}" action="${ctx}/sys/corpAdmin/save" method="post" class="form-horizontal">
+			<#form:hidden name="op" value="${op}"/>
+			<#form:hidden name="userType" value="employee"/>
+			<#form:hidden path="userCode"/>
+			<div class="box-body">
+				<div class="form-unit">${text('基本信息')}</div>
+				<div class="row ${useCorpModel?'':'hide'}">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="col-sm-4 control-label" title="">
+								<span class="required">*</span> ${text('租户代码')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="corpCode_" placeholder="${text('请输入租户代码')}" maxlength="20"
+									readonly="${!user.isNewRecord || op=='addAdmin'}" class="form-control abc required"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required">*</span> ${text('租户名称')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="corpName_" placeholder="${text('请输入租户名称')}" maxlength="32"
+									readonly="${!user.isNewRecord || op=='addAdmin'}" class="form-control required"/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('登录账号')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:hidden name="oldLoginCode" value="${user.loginCode}"/>
+								<#form:input path="loginCode" minlength="4" maxlength="20"
+									class="form-control required userName"
+									data-msg-remote="${text('登录账号已存在')}"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('用户昵称')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="userName" maxlength="32" class="form-control required "/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required hide">*</span> ${text('电子邮箱')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<div class="input-group">
+									<#form:input path="email" maxlength="300" class="form-control email"/>
+									<span class="input-group-addon"><i class="fa fa-fw fa-envelope"></i></span>
+				                </div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required hide">*</span> ${text('手机号码')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<div class="input-group">
+									<#form:input path="mobile" maxlength="100" class="form-control mobile"/>
+									<span class="input-group-addon"><i class="fa fa-fw fa-mobile"></i></span>
+				                </div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required hide">*</span> ${text('办公电话')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<div class="input-group">
+									<#form:input path="phone" maxlength="100" class="form-control phone"/>
+									<span class="input-group-addon"><i class="fa fa-fw fa-phone"></i></span>
+				                </div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required hide">*</span> ${text('权重(排序)')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="userWeight" maxlength="8" class="form-control digits" placeholder="${text('权重越大排名越靠前，请填写数字。')}"/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="form-group">
+							<label class="control-label col-sm-2" title="">
+								<span class="required hide">*</span> ${text('备注信息')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-10">
+								<#form:textarea path="remarks" rows="4" maxlength="500" class="form-control "/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-unit">${text('分配角色')}</div>
+				<div class="form-unit-wrap table-form">
+					<table id="roleGrid"></table>
+					<#form:hidden name="userRoleString"/>
+				</div>
+				<#form:extend collapsed="true" model="${user}" extendMap="${text('自定义属性')}" />
+			</div>
+			<div class="box-footer">
+				<div class="row">
+					<div class="col-sm-offset-2 col-sm-10">
+						<% if (hasPermi('sys:corpAdmin:edit')){ %>
+							<button type="submit" class="btn btn-sm btn-primary" id="btnSubmit"><i class="fa fa-check"></i> 保 存</button>&nbsp;
+						<% } %>
+						<button type="button" class="btn btn-sm btn-default" id="btnCancel" onclick="js.closeCurrentTabPage()"><i class="fa fa-reply-all"></i> 关 闭</button>
+					</div>
+				</div>
+			</div>
+		</#form:form>
+	</div>
+</div>
+<% } %>
+<script>
+$('#inputForm').validate({
+	rules:{
+		loginCode: {
+			remote: function(){
+				return '${ctx}/sys/user/checkLoginCode?oldLoginCode=${user.loginCode}'//&corpCode=' + $('#corpCode_').val()
+			}
+		}
+	},
+	submitHandler: function(form){
+		// 获取选中角色
+		$("#userRoleString").val(roleGrid.dataGrid('getSelectRows').join(','));
+		// 提交表单
+		js.ajaxSubmitForm($(form), getExtendMapFormData, function(data){
+			js.showMessage(data.message);
+			if(data.result == Global.TRUE){
+				js.closeCurrentTabPage(function(contentWindow){
+					contentWindow.page();
+				});
+			}
+		}, "json");
+    }
+});
+$('#corpCode_').change(function(){
+	if ($('#loginCode').val() != ''){
+		$('#loginCode').resetValid();
+	}else{
+		$('#loginCode').val('admin'+$(this).val()).resetValid();
+	}
+});
+//加载角色列表
+var roleGrid = $("#roleGrid").dataGrid({
+	url: '${ctx}/sys/role/treeData',
+	postData: [
+		{name:'isAll', value:'true'}
+	],
+	columnModel: [
+		{header:'${text("角色名称")}', name:'name', sortable:false, width:100, align:"center"},
+		{header:'${text("角色编码")}', name:'id', sortable:false, width:100, align:"center"}  
+	],
+	showCheckbox: true,
+	autoGridHeight: function(){
+		return 'auto';
+	},
+	onSelectRow: function(id, isSelect, event){
+		if (!isSelect && id == '${corpAdminRoleCode}') {
+			js.showMessage('${text("该角色为管理员默认，不能取消。")}');
+		}
+	},
+	onSelectAll: function(ids, isSelect){
+		for (var i=0; i<ids.length; i++){
+			if (!isSelect && ids[i] == '${corpAdminRoleCode}') {
+				js.showMessage('${text("该角色为管理员默认，不能取消。")}');
+			}
+		}
+	},
+	ajaxSuccess: function(){
+		//# for (role in roleList!){
+ 		roleGrid.dataGrid('setSelectRow', '${role.roleCode}');
+		//# }
+	}
+});
+</script>

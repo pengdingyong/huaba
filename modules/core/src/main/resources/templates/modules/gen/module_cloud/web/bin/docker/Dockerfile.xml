@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2013-Now https://jeesite.com All rights reserved.
+     No deletion without permission, or be held responsible to law. -->
+<template>
+	<name>Dockerfile</name>
+	<filePath>${baseDir}/${modulePath}/${moduleCode}/bin/docker</filePath>
+	<fileName>Dockerfile</fileName>
+	<content><![CDATA[FROM docker.1ms.run/eclipse-temurin:17
+LABEL maintainer="ThinkGem@163.com"
+
+ENV TZ=Asia/Shanghai LANG=C.UTF-8 JAVA_OPTS="\
+-Dspring.profiles.active=prod \
+-DcustomLogPath=/data"
+
+WORKDIR /app
+
+#COPY jeesite.lic WEB-INF/
+COPY ./maven/web.war ./
+
+VOLUME /tmp /data
+
+EXPOSE 8989
+
+ENTRYPOINT ["sh", "-c","\
+if [ -f 'web.war' ]; then jar -xvf web.war && rm web.war; fi && \
+cd WEB-INF && exec sh startup.sh\
+"]
+<% %>
+]]>
+	</content>
+</template>

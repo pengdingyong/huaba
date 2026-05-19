@@ -1,0 +1,355 @@
+<% layout('/layouts/default.html', {title: '编辑表格多行编辑', libs: ['dataGrid','validate']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> 编辑表格多行编辑
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="查询"><i class="fa fa-filter"></i> 查询</a>
+				<a href="#" id="btnGetData" class="btn btn-default"><i class="fa fa-hand-lizard-o"></i> 获取表格数据</a>
+				<a href="#" id="dataGridAddRowBtn" class="btn btn-primary"><i class="fa fa-plus"></i> 增行</a>
+				<a href="#" class="btn-setting" id="btnSetting" title="${text('设置')}"><i class="fa icon-settings"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${testData}" action="${ctx}/test/testData/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">单行文本：</label>
+					<div class="control-inline">
+						<#form:input path="testInput" maxlength="200" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">多行文本：</label>
+					<div class="control-inline">
+						<#form:input path="testTextarea" maxlength="200" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">下拉框：</label>
+					<div class="control-inline width-120">
+						<#form:select path="testSelect" dictType="sys_menu_type" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">下拉多选：</label>
+					<div class="control-inline width-120">
+						<#form:select path="testSelectMultiple" dictType="sys_menu_type" multiple="true" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">单选框：</label>
+					<div class="control-inline">
+						<#form:radio path="testRadio" dictType="sys_menu_type" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">复选框：</label>
+					<div class="control-inline">
+						<#form:checkbox path="testCheckbox" dictType="sys_menu_type" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">日期选择：</label>
+					<div class="control-inline">
+						<#form:input path="testDate_gte" readonly="true" maxlength="20" class="form-control laydate width-date"
+							dataFormat="date" data-type="date" data-format="yyyy-MM-dd" data-done="testDate_lte.click()"/>
+						&nbsp;-&nbsp;
+						<#form:input path="testDate_lte" readonly="true" maxlength="20" class="form-control laydate width-date"
+							dataFormat="date" data-type="date" data-format="yyyy-MM-dd"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">日期时间：</label>
+					<div class="control-inline">
+						<#form:input path="testDatetime_gte" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm" data-done="testDatetime_lte.click()"/>
+						&nbsp;-&nbsp;
+						<#form:input path="testDatetime_lte" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">用户选择：</label>
+					<div class="control-inline width-120" >
+						<#form:treeselect id="testUser" title="用户选择"
+							path="testUser.userCode" labelPath="testUser.userName" 
+							url="${ctx}/sys/office/treeData?isLoadUser=true" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">机构选择：</label>
+					<div class="control-inline width-120" >
+						<#form:treeselect id="testOffice" title="机构选择"
+							path="testOffice.officeCode" labelPath="testOffice.officeName" 
+							url="${ctx}/sys/office/treeData" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">区域选择：</label>
+					<div class="control-inline width-120" >
+						<#form:treeselect id="testAreaCode" title="区域选择"
+							path="testAreaCode" labelPath="testAreaName" 
+							url="${ctx}/sys/area/treeData" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">状态：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">备注信息：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm"><i class="glyphicon glyphicon-search"></i> ${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick"><i class="glyphicon glyphicon-repeat"></i> ${text('重置')}</button>
+				</div>
+			</#form:form>
+			<#form:form id="inputForm" model="${testData}" action="${ctx}/test/testData/save" method="post" class="form-horizontal table-form">
+				<table id="dataGrid"></table>
+				<div id="dataGridPage"></div>
+			</#form:form>
+		</div>
+	</div>
+</div>
+<% } %>
+<script id="treeselectTpl" type="text/template">//<!--<div>
+<#form:treeselect id="{{d.id}}" title="{{d.title}}" name="{{d.name}}" value="{{d.value}}"
+	labelName="{{d.labelName}}" labelValue="{{d.labelValue}}" url="{{d.url}}"
+	class="{{d.cssClass}}" btnClass="btn-sm" allowClear="true"/>
+</div>//--></script>
+<script id="listselectTpl" type="text/template">//<!--<div>
+<#form:listselect id="{{d.id}}" title="{{d.title}}" name="{{d.name}}" value="{{d.value}}"
+	labelName="{{d.labelName}}" labelValue="{{d.labelValue}}" url="{{d.url}}"
+	itemCode="{{d.itemCode}}" itemName="{{d.itemName}}"
+	class="{{d.cssClass}}" btnClass="btn-sm" allowClear="true"/>
+</div>//--></script>
+<script>
+//# // 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $('#searchForm'),
+	// 设置数据表格列
+	columnModel: [
+		{header:'状态', name:'status', editable:true, hidden:true},
+		{header:'主键', name:'id', editable:true, hidden:true},
+		{header:'${text("单行文本")}', name:'testInput', width:100, editable:true, edittype:'text', editoptions:{'maxlength':'200', 'class':'form-control'}},
+		{header:'${text("多行文本")}', name:'testTextarea', width:100, editable:true, edittype:'textarea', editoptions:{'maxlength':'200', 'class':'form-control', 'rows':'1'}},
+		{header:'${text("下拉框")}', name:'testSelect', width:100,
+			formatter: function(val, obj, row, act){
+				return js.getDictLabel(obj.colModel.editoptions.items, val, '${text("未知")}', true);
+			},
+			editable:true, edittype:'select', editoptions:{'class':'form-control',
+				items: $.merge([{dictLabel:'&nbsp;',dictValue:''}], "#{@DictUtils.getDictListJson('sys_menu_type')}"),
+				// items: $.merge([{dictLabel:'&nbsp;',dictValue:''}], "#{toJson(testSelectItems![])}"),
+				itemLabel: 'dictLabel', itemValue: 'dictValue', dataInit: function(element){
+					js.select2(element).on("change",function(){$(this).resetValid()});
+				}
+			}
+		},
+		{header:'${text("下拉多选")}', name:'testSelectMultiple', width:147, fixed: true,
+			formatter: function(val, obj, row, act){
+				return js.getDictLabel(obj.colModel.editoptions.items, val, '${text("未知")}', true);
+			},
+			editable:true, edittype:'select', editoptions:{multiple:true, 'class':'form-control',
+				items: $.merge([], "#{@DictUtils.getDictListJson('sys_menu_type')}"),
+				itemLabel: 'dictLabel', itemValue: 'dictValue', dataInit: function(element){
+					js.select2(element).on("change",function(){$(this).resetValid()});
+				}
+			}
+		},
+		{header:'${text("单选框")}', name:'testRadio', width:135, fixed: true,
+			formatter: function(val, obj, row, act){
+				return js.getDictLabel(obj.colModel.editoptions.items, val, '${text("未知")}', true);
+			},
+			editable:true, edittype:'radio', editoptions:{'class':'form-control icheck',
+				items: $.merge([], "#{@DictUtils.getDictListJson('sys_menu_type')}"),
+				itemLabel: 'dictLabel', itemValue: 'dictValue', dataInit: function(element){
+					js.iCheck(element).on("ifChanged",function(){$(this).resetValid()});
+				}
+			}
+		},
+		{header:'${text("复选框")}', name:'testCheckbox', width:135, fixed: true,
+			formatter: function(val, obj, row, act){
+				return js.getDictLabel(obj.colModel.editoptions.items, val, '${text("未知")}', true);
+			},
+			editable:true, edittype:'checkbox', editoptions:{'class':'form-control icheck',
+				items: $.merge([], "#{@DictUtils.getDictListJson('sys_menu_type')}"),
+				itemLabel: 'dictLabel', itemValue: 'dictValue', dataInit: function(element){
+					js.iCheck(element).on("ifChanged",function(){$(this).resetValid()});
+				}
+			}
+		},
+		{header:'${text("日期选择")}', name:'testDate', width:120,
+			formatter:'date', formatoptions:{srcformat:'Y-m-d H:i:s',newformat:'Y-m-d'},
+			editable:true, edittype:'text', editoptions:{'class':'form-control laydate', 'readonly':'true',
+				dataInit: function(element){
+					laydate.render({elem:element, type:'date', format:'yyyy-MM-dd', done: function(){
+						// 选择日期后，自动给下一个输入框赋值（联动实例）
+						// $(element).closest('td').next().find('.form-control').val('2020-11-26 10:10');
+					}});
+				}
+			}
+		},
+		{header:'${text("日期时间")}', name:'testDatetime', width:155,
+			formatter:'date', formatoptions:{srcformat:'Y-m-d H:i:s',newformat:'Y-m-d H:i'},
+			editable:true, edittype:'text', editoptions:{'class':'form-control laydate', 'readonly':'true',
+				dataInit: function(element){
+					laydate.render({elem:element, type:'datetime', format:'yyyy-MM-dd HH:mm'});
+				}
+			}
+		},
+		{header:'${text("用户选择")}', name:'testUser', width:100,
+			formatter: function(val, obj, row, act){
+				return js.val(obj.colModel.data[obj.rowId], 'userName');
+			},
+			editable: true, edittype: "custom", editoptions: {
+				custom_element: function(val, editOptions) {
+					var colData = editOptions.colModel.data[editOptions.rowId];
+					return js.template('treeselectTpl', {
+						id: 'user_'+editOptions.id, title: '用户选择',
+						name: 'testUser.userCode', value: js.val(colData, 'userCode'),
+						labelName: 'testUser.userName', labelValue: js.val(colData, 'userName'),
+						url: '${ctx}/sys/office/treeData?isLoadUser=true', cssClass: '', readonly: false
+					});
+				},
+				custom_value: function(element, act){
+					return { userCode: element.find('[type=hidden]:first').val(),
+						userName: element.find('[type=text]:first').val() };
+				},
+				dataInit: function(element){
+					// 初始化控件后设置只读模式（实例）
+					// $(element).find('.form-control, .btn').addClass('disabled');
+				}
+			}
+		},
+		{header:'${text("列表选择")}', name:'testUser2', width:100,
+			formatter: function(val, obj, row, act){
+				obj.colModel.data[obj.rowId] = row.testUser2 || row.testUser; // 给一个默认值
+				return js.val(obj.colModel.data[obj.rowId], 'userName');
+			},
+			editable: true, edittype: "custom", editoptions: {
+				custom_element: function(val, editOptions) {
+					var colData = editOptions.colModel.data[editOptions.rowId];
+					return js.template('listselectTpl', {
+						id: 'user_'+editOptions.id, title: '用户选择',
+						name: 'testUser2.userCode', value: js.val(colData, 'userCode'),
+						labelName: 'testUser2.userName', labelValue: js.val(colData, 'userName'),
+						url: '${ctx}/sys/empUser/empUserSelect', cssClass: '', readonly: false,
+						itemCode: 'userCode', itemName: 'userName'
+					});
+				},
+				custom_value: function(element, act){
+					return { userCode: element.find('[type=hidden]:first').val(),
+						userName: element.find('[type=text]:first').val() };
+				}
+			}
+		},
+		{header:'${text("机构选择")}', name:'testOffice', width:100, title:false,
+			formatter: function(val, obj, row, act){
+				return js.val(obj.colModel.data[obj.rowId], 'officeName');
+			},
+			editable: true, edittype: "custom", editoptions: {
+				custom_element: function(val, editOptions) {
+					var colData = editOptions.colModel.data[editOptions.rowId];
+					return js.template('treeselectTpl', {
+						id: 'office_'+editOptions.id, title: '机构选择',
+						name: 'testOffice.officeCode', value: js.val(colData, 'officeCode'),
+						labelName: 'testOffice.officeName', labelValue: js.val(colData, 'officeName'),
+						url: '${ctx}/sys/office/treeData?officeTypes=1,2', cssClass: '', readonly: false
+					});
+				},
+				custom_value: function(element, act){
+					return { officeCode: element.find('[type=hidden]:first').val(),
+						officeName: element.find('[type=text]:first').val() };
+				}
+			}
+		},
+		{header:'${text("区域选择")}', name:'testAreaCode', labelName:'testAreaName', width:100,
+			formatter: function(val, obj, row, act){
+				obj.colModel.data[obj.rowId+'_label'] = row.testAreaName || '';
+				return obj.colModel.data[obj.rowId+'_label'];
+			},
+			editable: true, edittype: "custom", editoptions: {
+				custom_element: function(val, editOptions) {
+					// return js.template('treeselectTpl', {
+					// 	id: 'area_'+editOptions.id, title: '区域选择',
+					// 	name: 'testAreaCode', value: val.split('|')[0],
+					// 	labelName: 'testAreaName', labelValue: val.split('|')[1],
+					// 	url: '${ctx}/sys/area/treeData', cssClass: '', readonly: false
+					// });
+					return js.template('treeselectTpl', {
+						id: 'area_'+editOptions.id, title: '区域选择',
+						name: 'testAreaCode', value: editOptions.colModel.data[editOptions.rowId],
+						labelName: 'testAreaName', labelValue: editOptions.colModel.data[editOptions.rowId+'_label'],
+						url: '${ctx}/sys/area/treeData', cssClass: '', readonly: false
+					});
+				},
+				custom_value: function(element, act, row){
+					if (!row || act !== 'get') { return; }
+					row['testAreaCode'] = element.find('[type=hidden]:first').val();
+					row['testAreaName'] = element.find('[type=text]:first').val();
+				}
+			}
+		},
+		{header:'操作', name:'actions', width:80, sortable:false, fixed:true, formatter: function(val, obj, row, act){
+			var actions = [];
+			if (val == 'new'){
+				actions.push('<a href="#" onclick="js.confirm(\'你确认要删除这条数据吗？\', function(){$(\'#dataGrid\').dataGrid(\'delRowData\',\''+obj.rowId+'\')});return false;"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			}else{
+				actions.push('<a href="#" onclick="js.confirm(\'你确认要删除这条数据吗？\', function(){$(\'#dataGrid\').dataGrid(\'setRowData\',\''+obj.rowId+'\',null,{display:\'none\'})});$(\'#'+obj.rowId+'_status\').val(\''+Global.STATUS_DELETE+'\');return false;"><i class="fa fa-trash-o"></i></a>&nbsp;');
+				// actions.push('<a href="${ctx}/test/testData/form?id='+row.id+'&flag=3" class="btnList" title="${text("编辑数据")}"><i class="fa icon-note"></i></a>&nbsp;');
+			}
+			return actions.join('');
+		}, editoptions: {defaultValue: 'new'}, unformat: function(val, obj, cell){return '';}}
+	],
+	onSelectRow: function(id, stat, e) {
+		if (id && e && !$(e.target).hasClass('btn')){
+			// $('#dataGrid').dataGrid('editRow', id,{keys:true,focusField:true});
+			// if(!$('#inputForm').valid()) {
+			// 	js.showMessage('您填写的信息有误，请根据提示修正。');
+			// 	return false;
+			// }
+			$('#dataGrid').dataGrid('saveEditRow', id).dataGrid('setEditRow', id);
+		}
+	},
+	
+	// 编辑表格参数
+	editGrid: true,				// 是否是编辑表格
+	editGridInitRowNum: 1,		// 编辑表格的初始化新增行数
+	editGridInitAllRowEdit: false,  // 是否初始化就编辑所有行（*** 重点 ***）
+	editGridAddRowBtn: $('#dataGridAddRowBtn'),	// 子表增行按钮
+	// editGridAddRowInitData: {id: '', status: Global.STATUS_NORMAL},	// 新增行的时候初始化的数据
+	editGridAddRow: function(action){	// 添加行事件方法
+		if (action == 'new' || action == 'init'){
+			// if(!$('#inputForm').valid()) {
+			// 	js.showMessage('您填写的信息有误，请根据提示修正。');
+			// 	return false;
+			// }
+			$('#dataGrid').dataGrid('saveEditRow')
+				.dataGrid('addEditRow', { copyLastRow: true });
+		}
+	},
+	
+	// 编辑表格的提交数据参数
+	editGridInputFormListName: 'testDataChildList', // 提交的数据列表名
+	editGridInputFormListAttrs: 'status,id,testSort,testData.id,testInput,testTextarea,testSelect,testSelectMultiple,testRadio,testCheckbox,testDate,testDatetime,testUser.userCode,testOffice.officeCode,testAreaCode,testAreaName,', // 提交数据列表的属性字段
+	
+	//# // 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+$('#btnGetData').click(function(){
+	$('#dataGrid').dataGrid('saveEditRow');
+	var data = $('#dataGrid').dataGrid('getRowData');
+	log(data)
+	js.showMessage('请按 F12 打开控制台，查看数据');
+});
+</script>

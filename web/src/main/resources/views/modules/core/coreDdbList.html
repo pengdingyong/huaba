@@ -1,0 +1,98 @@
+<% layout('/layouts/default.html', {title: '订单表管理', libs: ['dataGrid', 'modal']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('订单表管理')}
+			</div>
+			<div class="box-tools pull-right">
+					<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+					<% if(hasPermi('core:ddb:edit')){ %>
+						<a href="${ctx}/core/ddb/form" class="btn btn-default btnTool" title="${text('新增订单表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+						<a href="javascript:void(0);" class="btn" id="btnChart" title="${text('生成柱状图')}"><i class="fa fa-bar-chart"></i> ${text('生成柱状图')}</a>
+					<% } %>
+					<a href="#" class="btn-setting" id="btnSetting" title="${text('设置')}"><i class="fa icon-settings"></i></a>
+				</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${coreDdb}" action="${ctx}/core/ddb/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('订单编号')}：</label>
+					<div class="control-inline">
+						<#form:input path="orderNum" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('下单时间')}：</label>
+					<div class="control-inline">
+						<#form:input path="ddbXdsj" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('订单金额')}：</label>
+					<div class="control-inline">
+						<#form:input path="ddbDdje" maxlength="17" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('订单类型')}：</label>
+					<div class="control-inline">
+						<#form:input path="ddbDdlx" maxlength="10" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm"><i class="glyphicon glyphicon-search"></i> ${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick"><i class="glyphicon glyphicon-repeat"></i> ${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+//# // 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $('#searchForm'),
+	columnModel: [
+		{header:'${text("订单编号")}', name:'orderNum', index:'a.order_num', width:150, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/core/ddb/form?id='+row.id+'" class="btnList" data-title="${text("编辑订单表")}">'+$.jgrid.htmlEncode(val||row.id)+'</a>';
+		}},
+		{header:'${text("下单时间")}', name:'ddbXdsj', index:'a.ddb_xdsj', width:150, align:"center"},
+		{header:'${text("订单金额")}', name:'ddbDdje', index:'a.ddb_ddje', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("订单类型")}', name:'ddbDdlx', index:'a.ddb_ddlx', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", formatter: function(val, obj, row, act){
+			var actions = [];
+			//# if(hasPermi('core:ddb:edit')){
+				actions.push('<a href="${ctx}/core/ddb/form?id='+row.id+'" class="btnList" title="${text("编辑订单表")}"><i class="fa icon-note"></i></a>&nbsp;');
+				if (row.status == Global.STATUS_NORMAL){
+					actions.push('<a href="${ctx}/core/ddb/disable?id='+row.id+'" class="btnList" title="${text("停用订单表")}" data-confirm="${text("确认要停用该订单表吗？")}"><i class="fa icon-ban"></i></a>&nbsp;');
+				} else if (row.status == Global.STATUS_DISABLE){
+					actions.push('<a href="${ctx}/core/ddb/enable?id='+row.id+'" class="btnList" title="${text("启用订单表")}" data-confirm="${text("确认要启用该订单表吗？")}"><i class="fa icon-check"></i></a>&nbsp;');
+				}
+				actions.push('<a href="${ctx}/core/ddb/delete?id='+row.id+'" class="btnList" title="${text("删除订单表")}" data-confirm="${text("确认要删除该订单表吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//# }
+			return actions.join('');
+		}}
+	],
+	//# // 加载成功后执行事件
+	ajaxSuccess: function(data){
+	}
+});
+
+// 生成柱状图
+$('#btnChart').on('click', function(e) {
+	//e.preventDefault();
+	layer.open({
+		title: '${text("订单金额柱状图")}',
+		type: 2,
+		area: ['800px', '500px'],
+		content: '${ctx}/core/ddb/chart'
+	});
+});
+</script>
