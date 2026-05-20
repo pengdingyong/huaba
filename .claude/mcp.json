@@ -8,7 +8,7 @@
         "@benborla29/mcp-server-mysql",
         "--host=127.0.0.1",
         "--port=3306",
-        "--database=jeesite",
+        "--database=huaba",
         "--user=root",
         "--password=${MYSQL_PASSWORD}"
       ],
